@@ -315,10 +315,9 @@
       }
     }
   };
-  // TODO uncomment line below to test app with fake data
+  //  uncomment line below to test app with fake data
   //app.updateForecastCard(initialWeatherForecast);
 
-  // TODO add startup code here
   // code required to start app. for sake of simplicity, localStorage is used. in production we would want to use an async API instead
   app.selectedCities = localStorage.selectedCities;
   // grab data if pre-existing
@@ -339,5 +338,12 @@
     app.saveSelectedCities();
   }
 
-  // TODO add service worker code here
+  //service worker code 
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker
+      .register('./service-worker.js')
+      .then(function() {
+        console.log('SW registered')
+      });
+  }
 })();
