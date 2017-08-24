@@ -198,6 +198,11 @@
 
   // TODO add saveSelectedCities function here
 
+  app.saveSelectedCities = function() {
+    var selectedCities = JSON.stringify(app.selectedCities);
+    localStorage.selectedCities = selectedCities;
+  };
+
   app.getIconClass = function(weatherCode) {
     // Weather codes: https://developer.yahoo.com/weather/documentation.html#codes
     weatherCode = parseInt(weatherCode);
@@ -306,6 +311,25 @@
   //app.updateForecastCard(initialWeatherForecast);
 
   // TODO add startup code here
+  // code required to start app. for sake of simplicity, localStorage is used. in production we would want to use an async API instead
+  app.selectedCities = localStorage.selectedCities;
+  // grab data if pre-existing
+  if (app.selectedCities) {
+    app.selectedCities = JSON.parse(app.selectedCities);
+    app.selectedCities.forEach(function(city) {
+      app.getForecast(city.key, city.label);
+    });
+  } else {
+    // user loading app for the first time or hasnt saved any cities, show some fake data. production app in this example could guess users geoloc via ip and inject data into the page
+    app.updateForecastCard(initialWeatherForecast);
+    app.selectedCities = [
+      {
+        key: initialWeatherForecast.key,
+        label: initialWeatherForecast.label
+      }
+    ];
+    app.saveSelectedCities();
+  }
 
   // TODO add service worker code here
 })();
