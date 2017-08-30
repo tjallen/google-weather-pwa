@@ -50,16 +50,11 @@
     var selected = select.options[select.selectedIndex];
     var key = selected.value;
     var label = selected.textContent;
-    // init the app.selectedCities array here
     if (!app.selectedCities) {
       app.selectedCities = [];
     }
     app.getForecast(key, label);
-    // push the selected city to the array and save here
-    app.selectedCities.push({
-      key: key,
-      label: label,
-    });
+    app.selectedCities.push({key: key, label: label});
     app.saveSelectedCities();
     app.toggleAddDialog(false);
   });
@@ -174,7 +169,24 @@
     var url = 'https://query.yahooapis.com/v1/public/yql?format=json&q=' +
         statement;
     // TODO add cache logic here
-
+    if ('caches' in window) {
+      /*
+       * Check if the service worker has already cached this city's weather
+       * data. If the service worker has the data, then display the cached
+       * data while the app fetches the latest data.
+       */
+      caches.match(url).then(function(response) {
+        if (response) {
+          response.json().then(function updateFromCache(json) {
+            var results = json.query.results;
+            results.key = key;
+            results.label = label;
+            results.created = json.query.created;
+            app.updateForecastCard(results);
+          });
+        }
+      });
+    }
     // Fetch the latest data.
     var request = new XMLHttpRequest();
     request.onreadystatechange = function() {
@@ -205,7 +217,7 @@
   };
 
   // TODO add saveSelectedCities function here
-
+  // Save list of cities to localStorage.
   app.saveSelectedCities = function() {
     var selectedCities = JSON.stringify(app.selectedCities);
     localStorage.selectedCities = selectedCities;
@@ -315,35 +327,44 @@
       }
     }
   };
-  //  uncomment line below to test app with fake data
-  //app.updateForecastCard(initialWeatherForecast);
+  // TODO uncomment line below to test app with fake data
+  // app.updateForecastCard(initialWeatherForecast);
 
-  // code required to start app. for sake of simplicity, localStorage is used. in production we would want to use an async API instead
+  /************************************************************************
+   *
+   * Code required to start the app
+   *
+   * NOTE: To simplify this codelab, we've used localStorage.
+   *   localStorage is a synchronous API and has serious performance
+   *   implications. It should not be used in production applications!
+   *   Instead, check out IDB (https://www.npmjs.com/package/idb) or
+   *   SimpleDB (https://gist.github.com/inexorabletash/c8069c042b734519680c)
+   ************************************************************************/
+
+  // TODO add startup code here
   app.selectedCities = localStorage.selectedCities;
-  // grab data if pre-existing
   if (app.selectedCities) {
     app.selectedCities = JSON.parse(app.selectedCities);
     app.selectedCities.forEach(function(city) {
       app.getForecast(city.key, city.label);
     });
   } else {
-    // user loading app for the first time or hasnt saved any cities, show some fake data. production app in this example could guess users geoloc via ip and inject data into the page
+    /* The user is using the app for the first time, or the user has not
+     * saved any cities, so show the user some fake data. A real app in this
+     * scenario could guess the user's location via IP lookup and then inject
+     * that data into the page.
+     */
     app.updateForecastCard(initialWeatherForecast);
     app.selectedCities = [
-      {
-        key: initialWeatherForecast.key,
-        label: initialWeatherForecast.label
-      }
+      {key: initialWeatherForecast.key, label: initialWeatherForecast.label}
     ];
     app.saveSelectedCities();
   }
 
-  //service worker code 
+  // TODO add service worker code here
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker
-      .register('./service-worker.js')
-      .then(function() {
-        console.log('SW registered')
-      });
+             .register('./service-worker.js')
+             .then(function() { console.log('Service Worker Registered'); });
   }
 })();
